@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我是歷史大聰明 - B3L15複習</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        m: {
+                            bg: '#F5F0E6',
+                            card: '#FFFFFF',
+                            primary: '#A68A73',
+                            secondary: '#8C7A6B',
+                            text: '#4A4036',
+                            light: '#D9CFC4',
+                            error: '#C97A7E',
+                            success: '#7BA085'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #F5F0E6; color: #4A4036; }
+        .puzzle-piece { transition: all 0.3s ease; }
+        .puzzle-piece.lost { opacity: 0.2; transform: scale(0.8) rotate(15deg); filter: grayscale(100%); }
+        .btn-hover { transition: transform 0.1s, box-shadow 0.1s; }
+        .btn-hover:active { transform: translateY(2px); box-shadow: none; }
+        
+        .blank-slot {
+            display: inline-block;
+            min-width: 80px;
+            height: 36px;
+            border-bottom: 2px solid #A68A73;
+            margin: 0 4px;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 34px;
+            cursor: pointer;
+            color: #8C7A6B;
+            font-weight: bold;
+            background-color: #fcfbfa;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.2s;
+        }
+        .blank-slot:hover { background-color: #f0e9e1; }
+        .blank-slot.filled { border-bottom-color: #7BA085; color: #4A4036; }
+        
+        .word-bank-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 4px;
+            background-color: #FFFFFF;
+            border: 2px solid #D9CFC4;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .word-bank-btn:hover { border-color: #A68A73; background-color: #fdfcfb; transform: translateY(-1px); }
+        .word-bank-btn.used { opacity: 0; pointer-events: none; transform: scale(0.9); }
+        
+        .chunk-btn {
+            padding: 10px 16px;
+            background: linear-gradient(145deg, #ffffff, #f5f0e6);
+            border: 1px solid #D9CFC4;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            font-weight: 600;
+            user-select: none;
+        }
+        .chunk-btn:active { box-shadow: 0 1px 2px rgba(0,0,0,0.05); transform: translateY(2px); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <header class="w-full bg-m-card shadow-sm px-4 py-3 flex justify-between items-center sticky top-0 z-10">
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-m-secondary">我是歷史大聰明</h1>
+            <p class="text-sm text-m-primary font-semibold">B3L15複習 <span id="header-subtitle" class="text-m-text ml-2"></span></p>
+        </div>
+        <div class="flex items-center gap-1" id="lives-container">
+            <!-- SVGs will be injected here -->
+        </div>
+    </header>
+
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-40 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity">
+        <div class="bg-m-card rounded-2xl p-6 md:p-8 max-w-sm w-11/12 shadow-xl transform transition-transform text-center">
+            <h3 id="modal-title" class="text-xl font-bold mb-3 text-m-text">提示</h3>
+            <p id="modal-msg" class="text-m-secondary mb-6 leading-relaxed">訊息內容</p>
+            <button onclick="closeModal()" class="btn-hover w-full bg-m-primary text-white font-bold py-3 rounded-xl shadow-[0_4px_0_#8C7A6B]">
+                我知道了
+            </button>
+        </div>
+    </div>
+
+    <main id="app-content" class="flex-grow container mx-auto max-w-3xl p-4 md:p-6 flex flex-col justify-center items-center">
+        <!-- Dynamic Content Injected Here -->
+    </main>
+
+    <script>
+        const puzzleSVG = `<svg class="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="#A68A73" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 3.5C14.5 2.11929 13.3807 1 12 1C10.6193 1 9.5 2.11929 9.5 3.5C9.5 3.99268 9.64251 4.45214 9.88939 4.84656C9.21327 4.94635 8.62939 5.09706 8.16434 5.25206C6.73037 5.73 5.73037 6.73 5.25206 8.16434C5.09706 8.62939 4.94635 9.21327 4.84656 9.88939C4.45214 9.64251 3.99268 9.5 3.5 9.5C2.11929 9.5 1 10.6193 1 12C1 13.3807 2.11929 14.5 3.5 14.5C3.99268 14.5 4.45214 14.3575 4.84656 14.1106C4.94635 14.7867 5.09706 15.3706 5.25206 15.8357C5.73037 17.27 6.73037 18.27 8.16434 18.7479C8.62939 18.9029 9.21327 19.0536 9.88939 19.1534C9.64251 19.5479 9.5 20.0073 9.5 20.5C9.5 21.8807 10.6193 23 12 23C13.3807 23 14.5 21.8807 14.5 20.5C14.5 20.0073 14.3575 19.5479 14.1106 19.1534C14.7867 19.0536 15.3706 18.9029 15.8357 18.7479C17.27 18.27 18.27 17.27 18.7479 15.8357C18.9029 15.3706 19.0536 14.7867 19.1534 14.1106C19.5479 14.3575 20.0073 14.5 20.5 14.5C21.8807 14.5 23 13.3807 23 12C23 10.6193 21.8807 9.5 20.5 9.5C20.0073 9.5 19.5479 9.64251 19.1534 9.88939C19.0536 9.21327 18.9029 8.62939 18.7479 8.16434C18.27 6.73 17.27 5.73 15.8357 5.25206C15.3706 5.09706 14.7867 4.94635 14.1106 4.84656C14.3575 4.45214 14.5 3.99268 14.5 3.5Z"/></svg>`;
+
+        const part1Data = [
+            { q: "那個女生說她是我國小的同班同學，可是我不_________她，連名字都不記得。", options: ["認為", "想得", "看得", "認得"], ans: 3, hint: "表示認識某人或記得某人的樣貌。" },
+            { q: "我已經在台灣念書5年，已經_________日子沒回國，有點兒想家。", options: ["好些", "一些", "少些", "多些"], ans: 0, hint: "表示「很多、不少」的意思。" },
+            { q: "到了年底，百貨公司都會準備很多福利，不僅是打折的商品，還會__________抽獎活動給民眾參加。", options: ["開心", "開始", "開放", "開門"], ans: 2, hint: "表示允許大眾參與或進入。" },
+            { q: "我覺得今天小美上班的_________不太好，不知道她發生了什麼事，整個人看起來都不太專心。", options: ["狀態", "態度", "形狀", "情況"], ans: 0, hint: "指人或事物表現出來的情貌。" },
+            { q: "我們用了上次活動剩下的__________買了一台新的咖啡機，因為舊的已經快要壞掉了，加上大家都很想在上班時可以泡咖啡。", options: ["經費", "學費", "生活費", "電費"], ans: 0, hint: "辦理活動或維持組織運作的金錢。" },
+            { q: "警察、軍人都是辛苦的職業，因為他們要用生命努力_________國家的和平。", options: ["支持", "維持", "主持", "堅持"], ans: 1, hint: "保持原本的狀況繼續下去。" },
+            { q: "小美說她有點不喜歡小陳，叫我不要告訴別人，因為這是我們兩個之間的_________。", options: ["溝通", "說法", "秘密", "密碼"], ans: 2, hint: "不能讓別人知道的事情。" },
+            { q: "如果你要離開座位，請記得把私人或是貴重__________一起帶走，要不然容易被偷。", options: ["物品", "物體", "圖畫", "古蹟"], ans: 0, hint: "泛指各種東西、物件。" },
+            { q: "我以後想當一名台灣的_________，所以我現在很認真地在學外語跟歷史。", options: ["總統", "教授", "導遊", "導師"], ans: 2, hint: "專門帶領遊客參觀並解說的人。" },
+            { q: "__________你告訴我明天上班要開會，要不然我明天一定會因為沒準備資料而被老闆罵。", options: ["幸運", "幸福", "榮幸", "幸好"], ans: 3, hint: "表示因為某個好的條件而避免了壞事。" },
+            { q: "我的爺爺很年輕的時候就離開了__________，自己一個人在國外生活，一直到了退休才回國。", options: ["鄉下", "家鄉", "城市", "土地"], ans: 1, hint: "自己出生或長期成長的地方。" },
+            { q: "很多人都覺得世界上不___________自己做不到的事情，只要努力想完成目標，全世界的人事物都一定會幫你。", options: ["現在", "具有", "存在", "保存"], ans: 2, hint: "指事物實際有在世界上。" },
+            { q: "看完電影，小張很能___________失去親人、寵物的痛苦，因為在去年，她的家人因為一場火災而離開他了。", options: ["認得", "體會", "學會", "不會"], ans: 1, hint: "透過親身經驗而深刻感受到。" },
+            { q: "小美認真地跟警察____________那個撞了人的車子、駕駛長什麼樣。", options: ["請教", "解釋", "形容", "叫"], ans: 2, hint: "用語言把事物的樣子說出來。" },
+            { q: "這幅畫畫得十分____________，就好像真的去到了那個花園一樣。", options: ["生動", "生活", "生氣", "生命"], ans: 0, hint: "表現得很活潑、像真的一樣。" },
+            { q: "媽媽前幾天帶我去___________了一個印章，她說以後不管是買房子、辦郵局的帳戶、租房子，只要是正式的文件都用得到。", options: ["打", "蓋", "畫", "刻"], ans: 3, hint: "用刀子在木頭或石頭上雕出文字或圖案。" },
+            { q: "這座城市擁有許多歷史悠久的____，吸引了無數國內外遊客前來參觀。", options: ["古蹟", "公園", "商店", "草地"], ans: 0, hint: "古代留下來具有歷史價值的建築或遺跡。" },
+            { q: "阿里山是台灣相當____的觀光景點，除了它的日出、雲海、櫻花，很多人也為了要看日治時期的小火車而來到阿里山。", options: ["積極", "驕傲", "著名", "生動"], ans: 2, hint: "非常有名的意思。" },
+            { q: "王小明雖然年紀輕輕，卻能自己完成這麼困難的機器人設計，真是太____了！", options: ["積極", "誇獎", "驕傲", "了不起"], ans: 3, hint: "形容非常優秀、極好。" },
+            { q: "為了讓後代可以了解過去的生活方式跟歷史，政府決定將這座傳統房子完整地____下來。", options: ["保鮮", "保留", "保護", "保險"], ans: 1, hint: "保存下來，不讓它改變或消失。" }
+        ];
+
+        const part2Data = [
+            {
+                text: "週末，我和朋友去淡水參觀著名的[1]。那裡有棟[2]的建築叫紅毛城，是荷蘭人在幾百年前[3]的，[4]政治和外交意義。接著，我們去參觀龍山寺，那裡的石龍刻得[5]生動，是了不起的[6]。對台灣人來說，寺廟是很多人的生活中心。傍晚，我們在[7]看[8]，風景美得[9]。幸好有他當[10]，讓我更了解這塊土地。",
+                words: ["古蹟", "古老", "蓋", "具有", "十分", "藝術品", "碼頭", "夕陽", "沒話說", "導遊"],
+                hints: ["古代留下來的建築", "歷史悠久", "建造", "擁有", "非常", "藝術作品", "停船的地方", "傍晚的太陽", "好到無法形容", "帶領遊客的人"]
+            },
+            {
+                text: "歷史是[1]真實生活的記錄。[2]是歷史的一部分，能讓我們體會祖先的精神。因此，我們除了感謝祖先的[3]，也必須保護它們。只要建築具有歷史意義和[4]，就該被保留。雖然古蹟裡的許多[5]在現代[6]不存在了，但它們依然有著重要的歷史價值。[7]古蹟[8]得越好，[9]越覺得驕傲。[10]，古蹟就像歷史拼圖，能讓我們了解過去、掌握未來。",
+                words: ["人類", "古蹟", "智慧", "價值", "物品", "已", "其實", "維持", "人民", "總而言之"],
+                hints: ["世界上的人", "歷史遺跡", "聰明才智", "正面的意義與作用", "東西", "已經", "事實上", "保持", "一般民眾", "最後的結論"]
+            },
+            {
+                text: "[1]中國的傳統與[2]，[3]是屬於愛情的日子。這一天充滿了浪漫的[4]與豐富的[5]價值。許多[6]會在這天拜拜，請求自己的織布、做飯的能力很好。雖然牛郎織女的[7]不能每天在一起，但他們的愛情故事感動了[8]的人。到了現在，這個節日已經漸漸[9]成了華人的[10]，大家會在這天送禮物給心愛的人。",
+                words: ["根據", "習俗", "七夕", "想像", "文學", "姑娘", "結局", "無數", "變", "情人節"],
+                hints: ["依照", "傳統的習慣", "農曆七月七日", "腦中產生的畫面", "文字藝術", "年輕女子", "最後的結果", "算不清的數量", "改變", "情侶慶祝的節日"]
+            }
+        ];
+
+        const part3Data = [
+            {
+                grammar: "簡直",
+                qs: [
+                    { fragments: ["這幾條", "石頭刻的龍", "十分生動，", "看起來", "簡直", "就像", "真的", "快飛起來了。"], correctText: "這幾條石頭刻的龍十分生動，看起來簡直就像真的快飛起來了。" },
+                    { fragments: ["紅毛城的", "風景", "太美了，", "傍晚的", "夕陽", "簡直", "像一幅畫。"], correctText: "紅毛城的風景太美了，傍晚的夕陽簡直像一幅畫。" },
+                    { fragments: ["那個小孩", "聰明極了，", "學習", "歷史的速度", "簡直", "像天才一樣。"], correctText: "那個小孩聰明極了，學習歷史的速度簡直像天才一樣。" }
+                ]
+            },
+            {
+                grammar: "Vs 得沒話說",
+                qs: [
+                    { fragments: ["淡水碼頭", "附近的", "古蹟風景", "真的是", "美得沒話說。"], correctText: "淡水碼頭附近的古蹟風景真的是美得沒話說。" },
+                    { fragments: ["博物館裡", "保存的", "藝術品，", "歷史價值", "絕對是", "高得沒話說。"], correctText: "博物館裡保存的藝術品，歷史價值絕對是高得沒話說。" },
+                    { fragments: ["導遊", "介紹", "歷史故事", "的能力，", "詳細得", "沒話說。"], correctText: "導遊介紹歷史故事的能力，詳細得沒話說。" }
+                ]
+            },
+            {
+                grammar: "同時",
+                qs: [
+                    { fragments: ["我們", "應該", "感謝祖先的智慧，", "同時", "也必須", "努力保護古蹟。"], correctText: "我們應該感謝祖先的智慧，同時也必須努力保護古蹟。" },
+                    { fragments: ["學習歷史", "能了解過去，", "同時", "也能幫助我們", "掌握未來。"], correctText: "學習歷史能了解過去，同時也能幫助我們掌握未來。" },
+                    { fragments: ["參觀龍山寺", "可以欣賞藝術，", "同時", "也能體會", "當地人的生活。"], correctText: "參觀龍山寺可以欣賞藝術，同時也能體會當地人的生活。" }
+                ]
+            },
+            {
+                grammar: "總之",
+                qs: [
+                    { fragments: ["總之，", "只要建築", "具有", "歷史意義，", "就應該", "被完整地保留下來。"], correctText: "總之，只要建築具有歷史意義，就應該被完整地保留下來。" },
+                    { fragments: ["總之，", "把古蹟", "好好保留下來，", "對我們的國家", "非常重要。"], correctText: "總之，把古蹟好好保留下來，對我們的國家非常重要。" },
+                    { fragments: ["總之，", "古蹟就像", "歷史拼圖，", "能讓", "我們了解", "過去的生活。"], correctText: "總之，古蹟就像歷史拼圖，能讓我們了解過去的生活。" }
+                ]
+            }
+        ];
+
+        let state = {
+            stage: 0, // 0: Intro, 1: Choice, 2: Fill, 3: Grammar, 4: End
+            lives: 6,
+            part1Index: 0,
+            part2Index: 0,
+            part3GrammarIndex: 0,
+            part3QuestionIndex: 0,
+            part3Mistakes: 0,
+            
+            // Temporary states for current UI
+            p2Blanks: [],
+            p2AvailableWords: [],
+            p3Pool: [],
+            p3Answer: []
+        };
+
+        function renderLives() {
+            const container = document.getElementById('lives-container');
+            container.innerHTML = '';
+            for(let i=0; i<6; i++) {
+                let div = document.createElement('div');
+                div.innerHTML = puzzleSVG;
+                let svg = div.firstChild;
+                svg.classList.add('puzzle-piece');
+                if(i >= state.lives) svg.classList.add('lost');
+                container.appendChild(svg);
+            }
+        }
+
+        function showModal(title, msg, callback = null) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerHTML = msg;
+            const overlay = document.getElementById('modal-overlay');
+            overlay.classList.remove('hidden');
+            
+            // Temporary attach callback to close button
+            window.modalCallback = callback;
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            if(window.modalCallback) {
+                window.modalCallback();
+                window.modalCallback = null;
+            }
+        }
+
+        // Fisher-Yates shuffle
+        function shuffle(array) {
+            let currentIndex = array.length,  randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function loseLife(sectionName, resetCallback) {
+            state.lives--;
+            renderLives();
+            if (state.lives <= 0) {
+                showModal("機會耗盡！", `您的6個小拼圖都用完了！<br><b class="text-m-error">將從${sectionName}重新開始。</b>`, () => {
+                    state.lives = 6;
+                    resetCallback();
+                });
+                return true; // Life lost and reset triggered
+            }
+            return false; // Still alive
+        }
+
+        function render() {
+            const app = document.getElementById('app-content');
+            renderLives();
+            
+            if(state.stage === 0) {
+                document.getElementById('header-subtitle').innerText = "遊戲說明";
+                app.innerHTML = `
+                    <div class="bg-m-card p-8 rounded-3xl shadow-lg text-center w-full max-w-2xl border-t-4 border-m-primary">
+                        <h2 class="text-3xl font-bold text-m-text mb-6">我是歷史大聰明</h2>
+                        <div class="text-left text-m-secondary space-y-4 mb-8 text-lg">
+                            <p>歡迎來到 B3L15 複習挑戰！這裡有三個大題等你完成：</p>
+                            <ul class="list-disc list-inside pl-4 space-y-2">
+                                <li><b>第一大題：</b> 生詞選擇題 (20題)</li>
+                                <li><b>第二大題：</b> 生詞填空題 (三篇)</li>
+                                <li><b>第三大題：</b> 語法排序拼接</li>
+                            </ul>
+                            <div class="bg-m-bg p-4 rounded-xl mt-4 border border-m-light">
+                                <p class="font-bold text-m-text">🧩 拼圖生命值規則：</p>
+                                <p class="text-sm mt-2">每個大題開始時，你會有 <b class="text-m-primary">6 個小拼圖 (生命值)</b>。答錯會扣除一個。</p>
+                                <p class="text-sm mt-1">如果拼圖扣完，該大題將會 <b class="text-m-error">重新開始</b>！(第三大題則是每個語法重新計算)。</p>
+                            </div>
+                        </div>
+                        <button onclick="startStage1()" class="btn-hover bg-m-primary text-white text-xl font-bold py-4 px-12 rounded-full shadow-[0_6px_0_#8C7A6B]">開始挑戰</button>
+                    </div>
+                `;
+            } 
+            else if (state.stage === 1) {
+                document.getElementById('header-subtitle').innerText = "- 第一大題：選擇題";
+                let q = part1Data[state.part1Index];
+                
+                let optionsHtml = q.options.map((opt, i) => `
+                    <button onclick="handlePart1Ans(${i})" class="btn-hover w-full bg-white border-2 border-m-light hover:border-m-primary text-m-text font-bold py-4 px-6 rounded-2xl text-left text-lg flex items-center transition-colors">
+                        <span class="bg-m-bg text-m-primary w-8 h-8 rounded-full flex justify-center items-center mr-4 font-bold">${String.fromCharCode(65+i)}</span>
+                        ${opt}
+                    </button>
+                `).join('');
+
+                app.innerHTML = `
+                    <div class="w-full max-w-2xl">
+                        <div class="flex justify-between items-center mb-4 text-m-secondary font-semibold">
+                            <span>第一大題 (${state.part1Index + 1}/${part1Data.length})</span>
+                        </div>
+                        <div class="bg-m-card p-6 md:p-8 rounded-3xl shadow-sm mb-6 border-l-4 border-m-primary">
+                            <p class="text-xl md:text-2xl leading-relaxed font-bold text-m-text">${q.q}</p>
+                        </div>
+                        <div class="space-y-4">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            else if (state.stage === 2) {
+                document.getElementById('header-subtitle').innerText = "- 第二大題：生詞填空";
+                let article = part2Data[state.part2Index];
+                
+                // Construct text with blanks
+                let textHtml = article.text;
+                for(let i=1; i<=10; i++) {
+                    let blankVal = state.p2Blanks[i-1];
+                    let spanHtml = blankVal 
+                        ? `<span class="blank-slot filled" onclick="returnWord(${i-1})">${blankVal}</span>` 
+                        : `<span class="blank-slot" onclick="focusBlank(${i-1})">(${i})</span>`;
+                    textHtml = textHtml.replace(`[${i}]`, spanHtml);
+                }
+
+                let wordsHtml = state.p2AvailableWords.map((w, i) => {
+                    let isUsed = state.p2Blanks.includes(w);
+                    return `<button class="word-bank-btn ${isUsed ? 'used' : ''}" onclick="useWord('${w}')">${w}</button>`;
+                }).join('');
+
+                app.innerHTML = `
+                    <div class="w-full max-w-3xl flex flex-col h-full">
+                        <div class="flex justify-between items-center mb-4 text-m-secondary font-semibold">
+                            <span>第二大題 - 篇章 ${state.part2Index + 1}/3</span>
+                        </div>
+                        <div class="bg-m-card p-6 md:p-8 rounded-3xl shadow-sm mb-6 flex-grow border-l-4 border-m-primary text-lg md:text-xl leading-loose">
+                            ${textHtml}
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-m-light relative">
+                            <p class="text-sm text-m-secondary font-bold mb-3">請點擊生詞填入空格：</p>
+                            <div class="flex flex-wrap gap-2 justify-center min-h-[100px]">
+                                ${wordsHtml}
+                            </div>
+                            <div class="mt-6 text-center">
+                                <button onclick="checkPart2()" class="btn-hover bg-m-success text-white font-bold py-3 px-10 rounded-full shadow-[0_4px_0_#5f7a67] text-lg">送出答案</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            else if (state.stage === 3) {
+                let curGrammar = part3Data[state.part3GrammarIndex];
+                document.getElementById('header-subtitle').innerText = `- 第三大題：語法 (${curGrammar.grammar})`;
+                
+                let poolHtml = state.p3Pool.map((frag, i) => 
+                    `<button class="chunk-btn" onclick="p3MoveToAns(${i})">${frag}</button>`
+                ).join('');
+                
+                let ansHtml = state.p3Answer.map((frag, i) => 
+                    `<button class="chunk-btn bg-m-light border-m-primary" onclick="p3MoveToPool(${i})">${frag}</button>`
+                ).join('');
+
+                app.innerHTML = `
+                    <div class="w-full max-w-3xl">
+                        <div class="flex justify-between items-center mb-4 text-m-secondary font-semibold">
+                            <span>語法：${curGrammar.grammar} (${state.part3QuestionIndex + 1}/3)</span>
+                            <span class="text-xs bg-m-bg px-2 py-1 rounded">錯誤次數: ${state.part3Mistakes}/3</span>
+                        </div>
+                        
+                        <div class="bg-m-card p-6 rounded-3xl shadow-sm min-h-[120px] flex flex-wrap content-start gap-2 border-2 border-dashed border-m-primary mb-6 relative">
+                            ${state.p3Answer.length === 0 ? '<span class="text-m-light absolute top-6 left-6 select-none">點擊下方詞塊組合句子...</span>' : ansHtml}
+                        </div>
+
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-m-light">
+                            <div class="flex flex-wrap gap-3 justify-center min-h-[100px]">
+                                ${poolHtml}
+                            </div>
+                            <div class="mt-8 text-center">
+                                <button onclick="checkPart3()" class="btn-hover bg-m-success text-white font-bold py-3 px-10 rounded-full shadow-[0_4px_0_#5f7a67] text-lg">確認句子</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            else if (state.stage === 4) {
+                document.getElementById('header-subtitle').innerText = "完成！";
+                app.innerHTML = `
+                    <div class="bg-m-card p-8 rounded-3xl shadow-lg text-center w-full max-w-lg border-t-4 border-m-success">
+                        <div class="text-6xl mb-4">🏆</div>
+                        <h2 class="text-3xl font-bold text-m-text mb-4">恭喜你完成所有挑戰！</h2>
+                        <p class="text-m-secondary text-lg mb-8">你真的是歷史大聰明，B3L15 的生詞跟語法都難不倒你！</p>
+                        <button onclick="location.reload()" class="btn-hover bg-m-primary text-white text-xl font-bold py-3 px-10 rounded-full shadow-[0_4px_0_#8C7A6B]">再玩一次</button>
+                    </div>
+                `;
+            }
+        }
+
+        function startStage1() {
+            state.stage = 1;
+            state.lives = 6;
+            state.part1Index = 0;
+            render();
+        }
+
+        function handlePart1Ans(idx) {
+            let q = part1Data[state.part1Index];
+            if (idx === q.ans) {
+                // Correct
+                state.part1Index++;
+                if (state.part1Index >= part1Data.length) {
+                    showModal("太棒了！", "第一大題全部答對，準備進入第二大題！", startStage2);
+                } else {
+                    render();
+                }
+            } else {
+                // Wrong
+                let resetTriggered = loseLife("第一大題", startStage1);
+                if (!resetTriggered) {
+                    showModal("答錯囉！", `提示：${q.hint}`);
+                }
+            }
+        }
+
+        function startStage2() {
+            state.stage = 2;
+            state.lives = 6;
+            state.part2Index = 0;
+            initPart2Article();
+        }
+
+        function initPart2Article() {
+            let article = part2Data[state.part2Index];
+            state.p2Blanks = Array(10).fill(null);
+            state.p2AvailableWords = shuffle([...article.words]);
+            render();
+        }
+
+        function useWord(w) {
+            // Find first empty blank
+            let emptyIdx = state.p2Blanks.findIndex(b => b === null);
+            if (emptyIdx !== -1) {
+                state.p2Blanks[emptyIdx] = w;
+                render();
+            }
+        }
+
+        function returnWord(idx) {
+            if(state.p2Blanks[idx]) {
+                state.p2Blanks[idx] = null;
+                render();
+            }
+        }
+
+        function checkPart2() {
+            if(state.p2Blanks.includes(null)) {
+                showModal("請注意", "還有空格沒有填完喔！");
+                return;
+            }
+
+            let article = part2Data[state.part2Index];
+            let allCorrect = true;
+            let wrongIndices = [];
+
+            for(let i=0; i<10; i++) {
+                if(state.p2Blanks[i] !== article.words[i]) {
+                    allCorrect = false;
+                    wrongIndices.push(i);
+                }
+            }
+
+            if(allCorrect) {
+                state.part2Index++;
+                if(state.part2Index >= part2Data.length) {
+                    showModal("太棒了！", "第二大題全部完成，準備進入第三大題！", startStage3);
+                } else {
+                    showModal("正確！", "準備進入下一篇文章。", initPart2Article);
+                }
+            } else {
+                let resetTriggered = loseLife("第二大題", startStage2);
+                if(!resetTriggered) {
+                    // Return wrong words to bank
+                    wrongIndices.forEach(idx => {
+                        state.p2Blanks[idx] = null;
+                    });
+                    showModal("有錯誤喔！", "答錯的生詞已經退回生詞庫，請再試試看！");
+                    render();
+                }
+            }
+        }
+
+        function startStage3() {
+            state.stage = 3;
+            state.part3GrammarIndex = 0;
+            initPart3Grammar();
+        }
+
+        function initPart3Grammar() {
+            state.lives = 6;
+            state.part3QuestionIndex = 0;
+            initPart3Question();
+        }
+
+        function initPart3Question() {
+            state.part3Mistakes = 0;
+            let q = part3Data[state.part3GrammarIndex].qs[state.part3QuestionIndex];
+            state.p3Pool = shuffle([...q.fragments]);
+            state.p3Answer = [];
+            render();
+        }
+
+        function p3MoveToAns(idx) {
+            let frag = state.p3Pool.splice(idx, 1)[0];
+            state.p3Answer.push(frag);
+            render();
+        }
+
+        function p3MoveToPool(idx) {
+            let frag = state.p3Answer.splice(idx, 1)[0];
+            state.p3Pool.push(frag);
+            render();
+        }
+
+        function checkPart3() {
+            if(state.p3Pool.length > 0) {
+                showModal("請注意", "請把所有的詞塊都排入句子中！");
+                return;
+            }
+
+            let q = part3Data[state.part3GrammarIndex].qs[state.part3QuestionIndex];
+            let userAns = state.p3Answer.join("");
+
+            if(userAns === q.correctText) {
+                state.part3QuestionIndex++;
+                if(state.part3QuestionIndex >= 3) {
+                    // Finish this grammar
+                    state.part3GrammarIndex++;
+                    if(state.part3GrammarIndex >= part3Data.length) {
+                        state.stage = 4;
+                        render();
+                    } else {
+                        let nextGrammar = part3Data[state.part3GrammarIndex].grammar;
+                        showModal("恭喜！", `這個語法完成了，接下來進入語法：<b>${nextGrammar}</b><br>生命值已重置為 6！`, initPart3Grammar);
+                    }
+                } else {
+                    initPart3Question();
+                }
+            } else {
+                state.part3Mistakes++;
+                let resetTriggered = loseLife(`目前語法 (${part3Data[state.part3GrammarIndex].grammar})`, initPart3Grammar);
+                
+                if(!resetTriggered) {
+                    if (state.part3Mistakes >= 3) {
+                        showModal("錯太多次囉！", "別灰心，系統已經幫你把正確答案排好了，請仔細看一次然後送出吧！", () => {
+                            // Auto fill correct answer
+                            state.p3Answer = [...q.fragments]; // The original array in data is already in correct order
+                            state.p3Pool = [];
+                            render();
+                        });
+                    } else {
+                        // Return everything to pool
+                        state.p3Pool = state.p3Pool.concat(state.p3Answer);
+                        state.p3Answer = [];
+                        showModal("順序不對喔！", "詞塊已經退回，請重新排列。");
+                        render();
+                    }
+                }
+            }
+        }
+
+        // Initialize game on load
+        window.onload = () => {
+            // Pre-process part3 fragments so they are explicitly array of correct order
+            // Actually in our data definition, the fragments ARE in the correct order before shuffle.
+            render();
+        };
+
+    </script>
+</body>
+</html>
